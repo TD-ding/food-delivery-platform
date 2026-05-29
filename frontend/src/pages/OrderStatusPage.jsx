@@ -8,15 +8,13 @@ export default function OrderStatusPage() {
   const [searchParams] = useSearchParams()
   const lookupToken = searchParams.get('token') || ''
   const [order, setOrder] = useState(null)
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(lookupToken ? '' : '缺少查询凭证，请从订单查询页进入')
+  const [loading, setLoading] = useState(!!lookupToken)
 
   useEffect(() => {
+    if (!lookupToken) return
     setLoading(true)
-    const url = lookupToken
-      ? `/api/orders/${id}?token=${encodeURIComponent(lookupToken)}`
-      : `/api/orders/${id}`
-    get(url, { auth: false })
+    get(`/api/orders/${id}?token=${encodeURIComponent(lookupToken)}`, { auth: false })
       .then(setOrder)
       .catch(err => {
         setError(err instanceof ApiError ? err.message : '订单不存在或查询凭证不正确')

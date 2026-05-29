@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
-import { post, ApiError } from '../api'
+import { post, get, ApiError } from '../api'
 
 const PHONE_RE = /^1[3-9]\d{9}$/
 
@@ -29,6 +29,21 @@ export default function CheckoutPage() {
     }
     setSubmitting(true)
     setError('')
+
+    // Validate cart items are still available
+    try {
+      const dishes = await get('/api/dishes', { auth: false })
+      const availableIds = new Set(dishes.map(d => d.id))
+      const unavailable = items.filter(item => !availableIds.has(item.dish_id))
+      if (unavailable.length > 0) {
+        const names = unavailable.map(i => i.dish_name).join('、')
+        setError(`以下菜品已下架，请返回购物车移除: ${names}`)
+        setSubmitting(false)
+        return
+      }
+    } catch {
+      // If availability check fails, proceed with submission (backend will validate too)
+    }
     try {
       const data = await post('/api/orders', { ...form, items }, { auth: false })
       clearCart()
