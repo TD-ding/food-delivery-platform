@@ -1,24 +1,18 @@
 import React, { useState, useEffect } from 'react'
-
-const STATUS_MAP = {
-  pending: '待确认',
-  confirmed: '已确认',
-  preparing: '制作中',
-  delivering: '配送中',
-  completed: '已完成',
-  cancelled: '已取消'
-}
-
-const STATUS_OPTIONS = Object.entries(STATUS_MAP)
+import { LoadingSpinner, StatusBadge, STATUS_OPTIONS } from '../Shared'
 
 export default function AdminOrders({ token }) {
   const [orders, setOrders] = useState([])
   const [filter, setFilter] = useState('')
-  const headers = { 'Authorization': `Basic ${token}` }
+  const [loading, setLoading] = useState(true)
+  const headers = { 'Authorization': `Bearer ${token}` }
 
   const load = () => {
+    setLoading(true)
     const url = filter ? `/api/admin/orders?status=${filter}` : '/api/admin/orders'
-    fetch(url, { headers }).then(r => r.json()).then(setOrders)
+    fetch(url, { headers }).then(r => r.json()).then(data => {
+      setOrders(data)
+    }).finally(() => setLoading(false))
   }
 
   useEffect(load, [filter])
@@ -31,6 +25,8 @@ export default function AdminOrders({ token }) {
     })
     load()
   }
+
+  if (loading) return <LoadingSpinner />
 
   return (
     <div>
@@ -47,9 +43,7 @@ export default function AdminOrders({ token }) {
           <div key={order.id} className="order-card" style={{ marginTop: 12 }}>
             <div className="order-header">
               <span className="order-id">订单 #{order.id}</span>
-              <span className={`status-badge status-${order.status}`}>
-                {STATUS_MAP[order.status]}
-              </span>
+              <StatusBadge status={order.status} />
             </div>
             <div style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>
               {order.customer_name} | {order.phone} | {order.address}

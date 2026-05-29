@@ -1,2 +1,5 @@
 flask
 flask-cors
+PyJWT
+werkzeug
+markupsafe

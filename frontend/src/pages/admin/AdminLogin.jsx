@@ -34,7 +34,7 @@ export default function AdminLogin({ onLogin }) {
         <button type="submit">登录</button>
         {error && <p className="error-msg">{error}</p>}
       </form>
-      <p style={{ marginTop: 16, fontSize: 13, color: '#999' }}>默认账号: admin / admin123</p>
+      <p style={{ marginTop: 16, fontSize: 13, color: '#999' }}>默认账号: admin / Admin@2026!Secure</p>
     </div>
   )
 }

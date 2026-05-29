@@ -1,7 +1,8 @@
 import sqlite3
-import os
+from werkzeug.security import generate_password_hash
+from config import Config
 
-DB_PATH = os.path.join(os.path.dirname(__file__), 'food_delivery.db')
+DB_PATH = Config.DATABASE_PATH
 
 
 def get_db():
@@ -49,14 +50,15 @@ def init_db():
         CREATE TABLE IF NOT EXISTS admins (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL
+            password_hash TEXT NOT NULL
         );
     ''')
-    # Seed default admin
     cur = conn.execute("SELECT COUNT(*) FROM admins")
     if cur.fetchone()[0] == 0:
-        conn.execute("INSERT INTO admins (username, password) VALUES ('admin', 'admin123')")
-    # Seed some dishes if empty
+        conn.execute(
+            "INSERT INTO admins (username, password_hash) VALUES ('admin', ?)",
+            (generate_password_hash('Admin@2026!Secure'),)
+        )
     cur = conn.execute("SELECT COUNT(*) FROM dishes")
     if cur.fetchone()[0] == 0:
         dishes = [

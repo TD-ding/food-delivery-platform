@@ -1,38 +1,32 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-
-const STATUS_MAP = {
-  pending: '待确认',
-  confirmed: '已确认',
-  preparing: '制作中',
-  delivering: '配送中',
-  completed: '已完成',
-  cancelled: '已取消'
-}
+import { LoadingSpinner, StatusBadge } from '../Shared'
 
 export default function OrderStatusPage() {
   const { id } = useParams()
   const [order, setOrder] = useState(null)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    setLoading(true)
     fetch(`/api/orders/${id}`).then(r => {
       if (!r.ok) throw new Error()
       return r.json()
     }).then(setOrder).catch(() => setError('订单不存在'))
+    .finally(() => setLoading(false))
   }, [id])
 
+  if (loading) return <LoadingSpinner />
   if (error) return <div className="order-status-page"><p style={{ textAlign: 'center', color: '#999' }}>{error}</p></div>
-  if (!order) return <div style={{ textAlign: 'center', padding: 40 }}>加载中...</div>
+  if (!order) return <div style={{ textAlign: 'center', padding: 40 }}>订单不存在</div>
 
   return (
     <div className="order-status-page">
       <div className="order-card">
         <div className="order-header">
           <span className="order-id">订单 #{order.id}</span>
-          <span className={`status-badge status-${order.status}`}>
-            {STATUS_MAP[order.status] || order.status}
-          </span>
+          <StatusBadge status={order.status} />
         </div>
         <div className="order-items-list">
           {order.items && order.items.map(item => (

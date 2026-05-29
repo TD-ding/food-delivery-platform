@@ -7,6 +7,7 @@ export default function CheckoutPage() {
   const navigate = useNavigate()
   const [form, setForm] = useState({ customer_name: '', phone: '', address: '' })
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
 
@@ -14,6 +15,7 @@ export default function CheckoutPage() {
     e.preventDefault()
     if (!form.customer_name || !form.phone || !form.address) return
     setSubmitting(true)
+    setError('')
     try {
       const res = await fetch('/api/orders', {
         method: 'POST',
@@ -21,10 +23,14 @@ export default function CheckoutPage() {
         body: JSON.stringify({ ...form, items })
       })
       const data = await res.json()
+      if (!res.ok) {
+        setError(data.message || '下单失败')
+        return
+      }
       clearCart()
       navigate(`/order/${data.order_id}`)
     } catch {
-      alert('下单失败，请重试')
+      setError('网络错误，请重试')
     } finally {
       setSubmitting(false)
     }
@@ -50,6 +56,7 @@ export default function CheckoutPage() {
           <span style={{ color: '#ff4d4f' }}>¥{total.toFixed(1)}</span>
         </div>
       </div>
+      {error && <p className="error-msg">{error}</p>}
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label>姓名</label>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { LoadingSpinner } from '../Shared'
 
 const EMPTY_DISH = { name: '', description: '', price: '', image: '', category: '其他', available: 1 }
 
@@ -7,11 +8,16 @@ export default function AdminDishes({ token }) {
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY_DISH)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  const headers = { 'Authorization': `Basic ${token}`, 'Content-Type': 'application/json' }
+  const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
 
   const load = () => {
-    fetch('/api/admin/dishes', { headers }).then(r => r.json()).then(setDishes)
+    setLoading(true)
+    fetch('/api/admin/dishes', { headers }).then(r => r.json()).then(data => {
+      setDishes(data)
+    }).finally(() => setLoading(false))
   }
 
   useEffect(load, [])
@@ -19,22 +25,31 @@ export default function AdminDishes({ token }) {
   const openAdd = () => {
     setEditing(null)
     setForm(EMPTY_DISH)
+    setError('')
     setShowModal(true)
   }
 
   const openEdit = dish => {
     setEditing(dish.id)
     setForm({ ...dish, price: String(dish.price) })
+    setError('')
     setShowModal(true)
   }
 
   const handleSubmit = async e => {
     e.preventDefault()
+    setError('')
     const body = { ...form, price: parseFloat(form.price) }
+    let res
     if (editing) {
-      await fetch(`/api/admin/dishes/${editing}`, { method: 'PUT', headers, body: JSON.stringify(body) })
+      res = await fetch(`/api/admin/dishes/${editing}`, { method: 'PUT', headers, body: JSON.stringify(body) })
     } else {
-      await fetch('/api/admin/dishes', { method: 'POST', headers, body: JSON.stringify(body) })
+      res = await fetch('/api/admin/dishes', { method: 'POST', headers, body: JSON.stringify(body) })
+    }
+    const data = await res.json()
+    if (!res.ok) {
+      setError(data.message || '操作失败')
+      return
     }
     setShowModal(false)
     load()
@@ -45,6 +60,8 @@ export default function AdminDishes({ token }) {
     await fetch(`/api/admin/dishes/${id}`, { method: 'DELETE', headers })
     load()
   }
+
+  if (loading) return <LoadingSpinner />
 
   return (
     <div>
@@ -81,6 +98,7 @@ export default function AdminDishes({ token }) {
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h3>{editing ? '编辑菜品' : '添加菜品'}</h3>
+            {error && <p className="error-msg">{error}</p>}
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>名称</label>

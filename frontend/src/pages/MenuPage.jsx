@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useCart } from '../context/CartContext'
+import { LoadingSpinner } from '../Shared'
 
 const FOOD_ICONS = {
   '川菜': '🌶️', '家常菜': '🏠', '主食': '🍚', '汤品': '🥣', '饮品': '🥤', '其他': '🍽️'
@@ -9,19 +10,22 @@ export default function MenuPage() {
   const [dishes, setDishes] = useState([])
   const [categories, setCategories] = useState([])
   const [activeCat, setActiveCat] = useState('')
+  const [loading, setLoading] = useState(true)
   const { addItem } = useCart()
 
   useEffect(() => {
     fetch('/api/dishes/categories').then(r => r.json()).then(cats => {
       setCategories(cats)
       if (cats.length > 0) setActiveCat(cats[0])
-    })
+    }).finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
-    const url = activeCat ? `/api/dishes?category=${activeCat}` : '/api/dishes'
+    const url = activeCat ? `/api/dishes?category=${encodeURIComponent(activeCat)}` : '/api/dishes'
     fetch(url).then(r => r.json()).then(setDishes)
   }, [activeCat])
+
+  if (loading) return <LoadingSpinner />
 
   return (
     <div>
