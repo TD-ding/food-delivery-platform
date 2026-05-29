@@ -69,7 +69,7 @@ export default function MenuPage() {
               <div className="dish-name">{dish.name}</div>
               <div className="dish-desc">{dish.description}</div>
               <div className="dish-bottom">
-                <div className="dish-price">{dish.price}</div>
+                <div className="dish-price">¥{Number(dish.price).toFixed(2)}</div>
                 <button className="btn-add-cart" onClick={() => addItem(dish)}>加入购物车</button>
               </div>
             </div>
