@@ -304,7 +304,9 @@ def create_order():
     for item in items:
         dish_id = item.get('dish_id')
         quantity = item.get('quantity', 0)
-        if not dish_id or quantity <= 0:
+        if not isinstance(dish_id, int) or dish_id <= 0:
+            return jsonify({'message': f'菜品ID格式无效: {dish_id}'}), 400
+        if not isinstance(quantity, int) or quantity <= 0:
             return jsonify({'message': f'无效的菜品项: {item}'}), 400
         if quantity > MAX_ITEM_QUANTITY:
             return jsonify({'message': f'单品数量不能超过{MAX_ITEM_QUANTITY}'}), 400
@@ -360,6 +362,7 @@ def get_order(order_id):
     cur = g.db.execute("SELECT * FROM order_items WHERE order_id=?", (order_id,))
     items = [dict(row) for row in cur.fetchall()]
     result = dict(order)
+    result.pop('lookup_token', None)
     result['items'] = items
     return jsonify(result)
 
@@ -379,6 +382,7 @@ def admin_get_orders():
     order_ids = []
     for row in cur.fetchall():
         order = dict(row)
+        order.pop('lookup_token', None)
         orders.append(order)
         order_ids.append(order['id'])
 

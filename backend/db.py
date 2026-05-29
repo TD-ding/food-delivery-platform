@@ -77,6 +77,13 @@ def init_db():
             "INSERT INTO dishes (name, description, price, image, category) VALUES (?,?,?,?,?)",
             dishes
         )
+    # Migration: add lookup_token column if missing (for existing databases)
+    cols = [row[1] for row in conn.execute("PRAGMA table_info(orders)").fetchall()]
+    if 'lookup_token' not in cols:
+        conn.execute("ALTER TABLE orders ADD COLUMN lookup_token TEXT NOT NULL DEFAULT ''")
+    # Set lookup_token for existing orders that have empty token
+    conn.execute("UPDATE orders SET lookup_token = ? WHERE lookup_token = ''", (secrets.token_hex(16),))
+
     conn.commit()
     conn.close()
 
