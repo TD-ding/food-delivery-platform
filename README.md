@@ -31,10 +31,12 @@ food-delivery-platform/
 │       ├── main.jsx
 │       ├── App.jsx
 │       ├── index.css
+│       ├── api/
+│       │   └── index.js        # 统一请求封装（token、401处理、错误）
 │       ├── components/
 │       │   └── Shared.jsx    # 共享组件（LoadingSpinner、StatusBadge）
 │       ├── context/
-│       │   └── CartContext.jsx
+│       │   └── CartContext.jsx  # 购物车状态（localStorage 持久化）
 │       └── pages/
 │           ├── MenuPage.jsx
 │           ├── CartPage.jsx
@@ -87,7 +89,7 @@ npm run dev
 - 加入购物车 / 修改数量
 - 填写信息下单
 - 查看订单状态
-- 按订单号查询订单
+- 按订单号 + 手机号查询订单
 
 ### 管理后台
 - 管理员登录（JWT 认证）
@@ -101,7 +103,7 @@ npm run dev
 | GET | /api/dishes | 获取菜品列表（支持?category=筛选） |
 | GET | /api/dishes/categories | 获取菜品分类 |
 | POST | /api/orders | 创建订单 |
-| GET | /api/orders/:id | 查询订单 |
+| GET | /api/orders/:id?phone=xxx | 查询订单（需手机号验证） |
 | POST | /api/admin/login | 管理员登录 |
 | POST | /api/admin/change-password | 修改管理员密码 |
 | GET | /api/admin/dishes | 获取所有菜品（含下架） |

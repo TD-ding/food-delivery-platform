@@ -1,29 +1,31 @@
 import React, { useState, useEffect } from 'react'
 import { LoadingSpinner, StatusBadge, STATUS_OPTIONS } from '../Shared'
+import { get, put, ApiError } from '../../api'
 
-export default function AdminOrders({ token }) {
+export default function AdminOrders({ token, onAuthError }) {
   const [orders, setOrders] = useState([])
   const [filter, setFilter] = useState('')
   const [loading, setLoading] = useState(true)
-  const headers = { 'Authorization': `Bearer ${token}` }
 
   const load = () => {
     setLoading(true)
     const url = filter ? `/api/admin/orders?status=${filter}` : '/api/admin/orders'
-    fetch(url, { headers }).then(r => r.json()).then(data => {
+    get(url).then(data => {
       setOrders(data)
+    }).catch(err => {
+      if (err.status === 401) onAuthError()
     }).finally(() => setLoading(false))
   }
 
   useEffect(load, [filter])
 
   const updateStatus = async (orderId, status) => {
-    await fetch(`/api/admin/orders/${orderId}/status`, {
-      method: 'PUT',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    })
-    load()
+    try {
+      await put(`/api/admin/orders/${orderId}/status`, { status })
+      load()
+    } catch (err) {
+      if (err.status === 401) onAuthError()
+    }
   }
 
   if (loading) return <LoadingSpinner />
@@ -52,13 +54,13 @@ export default function AdminOrders({ token }) {
               {order.items && order.items.map(item => (
                 <div key={item.id} className="order-item-row">
                   <span>{item.dish_name} x{item.quantity}</span>
-                  <span>¥{(item.price * item.quantity).toFixed(1)}</span>
+                  <span>¥{(item.price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
             </div>
             <div className="order-footer">
               <div>
-                <span className="order-total">¥{order.total_price.toFixed(1)}</span>
+                <span className="order-total">¥{order.total_price.toFixed(2)}</span>
                 <span className="order-time" style={{ marginLeft: 12 }}>{order.created_at}</span>
               </div>
               <select

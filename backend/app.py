@@ -233,13 +233,38 @@ def create_order():
     if not address:
         return jsonify({'message': '配送地址不能为空'}), 400
 
-    total = sum(item['price'] * item['quantity'] for item in items)
+    # Validate items and re-calculate prices from DB
+    order_items = []
+    total = 0.0
+    unavailable = []
+    for item in items:
+        dish_id = item.get('dish_id')
+        quantity = item.get('quantity', 0)
+        if not dish_id or quantity <= 0:
+            return jsonify({'message': f'无效的菜品项: {item}'}), 400
+        cur = g.db.execute("SELECT id, name, price, available FROM dishes WHERE id=?", (dish_id,))
+        dish = cur.fetchone()
+        if not dish:
+            return jsonify({'message': f'菜品不存在: ID {dish_id}'}), 400
+        if not dish['available']:
+            unavailable.append(dish['name'])
+        order_items.append({
+            'dish_id': dish['id'],
+            'dish_name': dish['name'],
+            'price': dish['price'],
+            'quantity': quantity,
+        })
+        total += dish['price'] * quantity
+
+    if unavailable:
+        return jsonify({'message': f'以下菜品已下架: {", ".join(unavailable)}'}), 400
+
     cur = g.db.execute(
         "INSERT INTO orders (customer_name, phone, address, total_price) VALUES (?,?,?,?)",
         (customer_name, phone, address, total)
     )
     order_id = cur.lastrowid
-    for item in items:
+    for item in order_items:
         g.db.execute(
             "INSERT INTO order_items (order_id, dish_id, dish_name, quantity, price) VALUES (?,?,?,?,?)",
             (order_id, item['dish_id'], item['dish_name'], item['quantity'], item['price'])
@@ -250,10 +275,15 @@ def create_order():
 
 @app.route('/api/orders/<int:order_id>', methods=['GET'])
 def get_order(order_id):
+    phone = request.args.get('phone', '').strip()
     cur = g.db.execute("SELECT * FROM orders WHERE id=?", (order_id,))
     order = cur.fetchone()
     if not order:
         return jsonify({'message': '订单不存在'}), 404
+    if not phone:
+        return jsonify({'message': '请提供手机号进行验证'}), 400
+    if order['phone'] != phone:
+        return jsonify({'message': '手机号不匹配'}), 403
     cur = g.db.execute("SELECT * FROM order_items WHERE order_id=?", (order_id,))
     items = [dict(row) for row in cur.fetchall()]
     result = dict(order)

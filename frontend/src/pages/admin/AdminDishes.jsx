@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { LoadingSpinner } from '../Shared'
+import { get, post, put, del, ApiError } from '../../api'
 
 const EMPTY_DISH = { name: '', description: '', price: '', image: '', category: '其他', available: 1 }
 
-export default function AdminDishes({ token }) {
+export default function AdminDishes({ token, onAuthError }) {
   const [dishes, setDishes] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -11,12 +12,12 @@ export default function AdminDishes({ token }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-
   const load = () => {
     setLoading(true)
-    fetch('/api/admin/dishes', { headers }).then(r => r.json()).then(data => {
+    get('/api/admin/dishes').then(data => {
       setDishes(data)
+    }).catch(err => {
+      if (err.status === 401) onAuthError()
     }).finally(() => setLoading(false))
   }
 
@@ -40,25 +41,28 @@ export default function AdminDishes({ token }) {
     e.preventDefault()
     setError('')
     const body = { ...form, price: parseFloat(form.price) }
-    let res
-    if (editing) {
-      res = await fetch(`/api/admin/dishes/${editing}`, { method: 'PUT', headers, body: JSON.stringify(body) })
-    } else {
-      res = await fetch('/api/admin/dishes', { method: 'POST', headers, body: JSON.stringify(body) })
+    try {
+      if (editing) {
+        await put(`/api/admin/dishes/${editing}`, body)
+      } else {
+        await post('/api/admin/dishes', body)
+      }
+      setShowModal(false)
+      load()
+    } catch (err) {
+      if (err.status === 401) { onAuthError(); return }
+      setError(err.message || '操作失败')
     }
-    const data = await res.json()
-    if (!res.ok) {
-      setError(data.message || '操作失败')
-      return
-    }
-    setShowModal(false)
-    load()
   }
 
   const handleDelete = async id => {
     if (!confirm('确定删除该菜品？')) return
-    await fetch(`/api/admin/dishes/${id}`, { method: 'DELETE', headers })
-    load()
+    try {
+      await del(`/api/admin/dishes/${id}`)
+      load()
+    } catch (err) {
+      if (err.status === 401) onAuthError()
+    }
   }
 
   if (loading) return <LoadingSpinner />
@@ -82,7 +86,7 @@ export default function AdminDishes({ token }) {
                 <td>{d.id}</td>
                 <td>{d.name}</td>
                 <td>{d.category}</td>
-                <td>¥{d.price}</td>
+                <td>¥{Number(d.price).toFixed(2)}</td>
                 <td>{d.available ? '✅ 上架' : '❌ 下架'}</td>
                 <td>
                   <button className="btn-sm btn-edit" onClick={() => openEdit(d)}>编辑</button>

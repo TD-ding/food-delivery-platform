@@ -11,21 +11,37 @@ export default function MenuPage() {
   const [categories, setCategories] = useState([])
   const [activeCat, setActiveCat] = useState('')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const { addItem } = useCart()
 
   useEffect(() => {
-    fetch('/api/dishes/categories').then(r => r.json()).then(cats => {
+    setLoading(true)
+    fetch('/api/dishes/categories').then(r => {
+      if (!r.ok) throw new Error()
+      return r.json()
+    }).then(cats => {
       setCategories(cats)
       if (cats.length > 0) setActiveCat(cats[0])
-    }).finally(() => setLoading(false))
+    }).catch(() => setError('加载分类失败，请刷新重试'))
+    .finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
+    if (!activeCat && categories.length === 0) return
     const url = activeCat ? `/api/dishes?category=${encodeURIComponent(activeCat)}` : '/api/dishes'
-    fetch(url).then(r => r.json()).then(setDishes)
+    fetch(url).then(r => {
+      if (!r.ok) throw new Error()
+      return r.json()
+    }).then(setDishes).catch(() => setError('加载菜品失败，请刷新重试'))
   }, [activeCat])
 
   if (loading) return <LoadingSpinner />
+  if (error) return (
+    <div style={{ textAlign: 'center', padding: '60px 20px', color: '#999' }}>
+      <p>{error}</p>
+      <button onClick={() => window.location.reload()} style={{ marginTop: 12, padding: '8px 20px', background: '#ff4d4f', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>重试</button>
+    </div>
+  )
 
   return (
     <div>

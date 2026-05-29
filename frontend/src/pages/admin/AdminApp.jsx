@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom'
 import AdminLogin from './AdminLogin'
 import AdminDishes from './AdminDishes'
@@ -10,10 +10,14 @@ export default function AdminApp() {
 
   const isLoggedIn = !!token
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setToken('')
     localStorage.removeItem('admin_token')
-  }
+  }, [])
+
+  const onAuthError = useCallback(() => {
+    logout()
+  }, [logout])
 
   if (!isLoggedIn && !location.pathname.endsWith('/login')) {
     return <Navigate to="/admin/login" replace />
@@ -32,8 +36,8 @@ export default function AdminApp() {
       </nav>
       <div className="admin-content">
         <Routes>
-          <Route path="dishes" element={<AdminDishes token={token} />} />
-          <Route path="orders" element={<AdminOrders token={token} />} />
+          <Route path="dishes" element={<AdminDishes token={token} onAuthError={onAuthError} />} />
+          <Route path="orders" element={<AdminOrders token={token} onAuthError={onAuthError} />} />
           <Route path="*" element={<Navigate to="/admin/dishes" replace />} />
         </Routes>
       </div>

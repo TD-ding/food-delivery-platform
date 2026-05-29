@@ -26,13 +26,13 @@ export default function CartPage() {
             <span className="quantity-num">{item.quantity}</span>
             <button className="quantity-btn" onClick={() => updateQuantity(item.dish_id, 1)}>+</button>
           </div>
-          <div className="cart-item-price">¥{(item.price * item.quantity).toFixed(1)}</div>
+          <div className="cart-item-price">¥{(item.price * item.quantity).toFixed(2)}</div>
         </div>
       ))}
       <div className="cart-summary">
         <div className="cart-total">
           <span>合计</span>
-          <span className="cart-total-price">¥{total.toFixed(1)}</span>
+          <span className="cart-total-price">¥{total.toFixed(2)}</span>
         </div>
         <button className="btn-checkout" onClick={() => navigate('/checkout')}>去结算</button>
       </div>

@@ -1,9 +1,30 @@
-import React, { createContext, useContext, useState, useCallback } from 'react'
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 
 const CartContext = createContext()
 
+const STORAGE_KEY = 'food_delivery_cart'
+
+function loadCart() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    return saved ? JSON.parse(saved) : []
+  } catch {
+    return []
+  }
+}
+
+function saveCart(items) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
+  } catch { /* ignore */ }
+}
+
 export function CartProvider({ children }) {
-  const [items, setItems] = useState([])
+  const [items, setItems] = useState(loadCart)
+
+  useEffect(() => {
+    saveCart(items)
+  }, [items])
 
   const addItem = useCallback((dish) => {
     setItems(prev => {
