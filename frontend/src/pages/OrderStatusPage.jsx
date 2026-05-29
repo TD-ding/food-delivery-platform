@@ -1,24 +1,28 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { LoadingSpinner, StatusBadge } from '../Shared'
+import { get, ApiError } from '../api'
 
 export default function OrderStatusPage() {
   const { id } = useParams()
   const [searchParams] = useSearchParams()
-  const phone = searchParams.get('phone') || ''
+  const lookupToken = searchParams.get('token') || ''
   const [order, setOrder] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     setLoading(true)
-    const url = phone ? `/api/orders/${id}?phone=${encodeURIComponent(phone)}` : `/api/orders/${id}`
-    fetch(url).then(r => {
-      if (!r.ok) throw new Error()
-      return r.json()
-    }).then(setOrder).catch(() => setError('订单不存在或手机号不匹配'))
-    .finally(() => setLoading(false))
-  }, [id, phone])
+    const url = lookupToken
+      ? `/api/orders/${id}?token=${encodeURIComponent(lookupToken)}`
+      : `/api/orders/${id}`
+    get(url, { auth: false })
+      .then(setOrder)
+      .catch(err => {
+        setError(err instanceof ApiError ? err.message : '订单不存在或查询凭证不正确')
+      })
+      .finally(() => setLoading(false))
+  }, [id, lookupToken])
 
   if (loading) return <LoadingSpinner />
   if (error) return <div className="order-status-page"><p style={{ textAlign: 'center', color: '#999' }}>{error}</p></div>

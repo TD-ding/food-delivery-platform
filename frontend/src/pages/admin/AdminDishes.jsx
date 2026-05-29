@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { LoadingSpinner } from '../Shared'
-import { get, post, put, del, ApiError } from '../../api'
+import { get, post, put, remove, ApiError } from '../../api'
 
 const EMPTY_DISH = { name: '', description: '', price: '', image: '', category: '其他', available: 1 }
 
-export default function AdminDishes({ token, onAuthError }) {
+export default function AdminDishes({ onAuthError }) {
   const [dishes, setDishes] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -58,10 +58,11 @@ export default function AdminDishes({ token, onAuthError }) {
   const handleDelete = async id => {
     if (!confirm('确定删除该菜品？')) return
     try {
-      await del(`/api/admin/dishes/${id}`)
+      await remove(`/api/admin/dishes/${id}`)
       load()
     } catch (err) {
-      if (err.status === 401) onAuthError()
+      if (err.status === 401) { onAuthError(); return }
+      setError(err.message)
     }
   }
 
@@ -69,6 +70,7 @@ export default function AdminDishes({ token, onAuthError }) {
 
   return (
     <div>
+      {error && <p className="error-msg" style={{ marginBottom: 12 }}>{error}</p>}
       <div className="admin-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3>菜品管理</h3>

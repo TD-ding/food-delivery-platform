@@ -1,4 +1,7 @@
 import React, { useState } from 'react'
+import { post, ApiError } from '../../api'
+
+const isDev = import.meta.env.DEV
 
 export default function AdminLogin({ onLogin }) {
   const [username, setUsername] = useState('')
@@ -9,19 +12,14 @@ export default function AdminLogin({ onLogin }) {
     e.preventDefault()
     setError('')
     try {
-      const res = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      })
-      const data = await res.json()
+      const data = await post('/api/admin/login', { username, password }, { auth: false })
       if (data.success) {
         onLogin(data.token)
       } else {
         setError(data.message || '登录失败')
       }
-    } catch {
-      setError('网络错误')
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : '网络错误')
     }
   }
 
@@ -34,7 +32,7 @@ export default function AdminLogin({ onLogin }) {
         <button type="submit">登录</button>
         {error && <p className="error-msg">{error}</p>}
       </form>
-      <p style={{ marginTop: 16, fontSize: 13, color: '#999' }}>默认账号: admin / Admin@2026!Secure</p>
+      {isDev && <p style={{ marginTop: 16, fontSize: 13, color: '#999' }}>默认账号: admin / Admin@2026!Secure</p>}
     </div>
   )
 }

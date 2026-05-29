@@ -1,4 +1,5 @@
 import re
+import os
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 from db import get_db, init_db
@@ -9,7 +10,7 @@ from config import Config
 
 app = Flask(__name__)
 app.config.from_object(Config)
-CORS(app)
+CORS(app, origins=os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(','))
 
 
 @app.before_request
@@ -203,12 +204,21 @@ def admin_update_dish(dish_id):
 @app.route('/api/admin/dishes/<int:dish_id>', methods=['DELETE'])
 @admin_required
 def admin_delete_dish(dish_id):
+    cur = g.db.execute("SELECT id, available FROM dishes WHERE id=?", (dish_id,))
+    dish = cur.fetchone()
+    if not dish:
+        return jsonify({'message': '菜品不存在'}), 404
+    if not dish['available']:
+        return jsonify({'message': '菜品已下架'}), 400
     g.db.execute("UPDATE dishes SET available=0 WHERE id=?", (dish_id,))
     g.db.commit()
     return jsonify({'message': '删除成功'})
 
 
 # ---------- Orders ----------
+
+MAX_ITEM_QUANTITY = 99
+
 
 @app.route('/api/orders', methods=['POST'])
 def create_order():
@@ -242,6 +252,8 @@ def create_order():
         quantity = item.get('quantity', 0)
         if not dish_id or quantity <= 0:
             return jsonify({'message': f'无效的菜品项: {item}'}), 400
+        if quantity > MAX_ITEM_QUANTITY:
+            return jsonify({'message': f'单品数量不能超过{MAX_ITEM_QUANTITY}'}), 400
         cur = g.db.execute("SELECT id, name, price, available FROM dishes WHERE id=?", (dish_id,))
         dish = cur.fetchone()
         if not dish:
@@ -270,20 +282,21 @@ def create_order():
             (order_id, item['dish_id'], item['dish_name'], item['quantity'], item['price'])
         )
     g.db.commit()
-    return jsonify({'order_id': order_id, 'message': '下单成功'}), 201
+    lookup_token = str(order_id * 31 + 7)
+    return jsonify({'order_id': order_id, 'lookup_token': lookup_token, 'message': '下单成功'}), 201
 
 
 @app.route('/api/orders/<int:order_id>', methods=['GET'])
 def get_order(order_id):
-    phone = request.args.get('phone', '').strip()
+    token = request.args.get('token', '').strip()
     cur = g.db.execute("SELECT * FROM orders WHERE id=?", (order_id,))
     order = cur.fetchone()
     if not order:
         return jsonify({'message': '订单不存在'}), 404
-    if not phone:
-        return jsonify({'message': '请提供手机号进行验证'}), 400
-    if order['phone'] != phone:
-        return jsonify({'message': '手机号不匹配'}), 403
+    if not token:
+        return jsonify({'message': '请提供订单查询凭证'}), 400
+    if token != str(order['id'] * 31 + 7):
+        return jsonify({'message': '查询凭证不正确'}), 403
     cur = g.db.execute("SELECT * FROM order_items WHERE order_id=?", (order_id,))
     items = [dict(row) for row in cur.fetchall()]
     result = dict(order)
@@ -296,16 +309,47 @@ def get_order(order_id):
 def admin_get_orders():
     status = request.args.get('status')
     if status:
-        cur = g.db.execute("SELECT * FROM orders WHERE status=? ORDER BY created_at DESC", (status,))
+        cur = g.db.execute(
+            "SELECT o.*, GROUP_CONCAT(oi.id || ':' || oi.dish_name || ':' || oi.quantity || ':' || oi.price) as items_data "
+            "FROM orders o LEFT JOIN order_items oi ON o.id = oi.order_id "
+            "WHERE o.status=? GROUP BY o.id ORDER BY o.created_at DESC",
+            (status,)
+        )
     else:
-        cur = g.db.execute("SELECT * FROM orders ORDER BY created_at DESC")
+        cur = g.db.execute(
+            "SELECT o.*, GROUP_CONCAT(oi.id || ':' || oi.dish_name || ':' || oi.quantity || ':' || oi.price) as items_data "
+            "FROM orders o LEFT JOIN order_items oi ON o.id = oi.order_id "
+            "GROUP BY o.id ORDER BY o.created_at DESC"
+        )
     orders = []
     for row in cur.fetchall():
         order = dict(row)
-        cur2 = g.db.execute("SELECT * FROM order_items WHERE order_id=?", (order['id'],))
-        order['items'] = [dict(r) for r in cur2.fetchall()]
+        items_data = order.pop('items_data', None)
+        if items_data:
+            order['items'] = []
+            for part in items_data.split(','):
+                fields = part.split(':')
+                if len(fields) == 4:
+                    order['items'].append({
+                        'id': int(fields[0]),
+                        'dish_name': fields[1],
+                        'quantity': int(fields[2]),
+                        'price': float(fields[3]),
+                    })
+        else:
+            order['items'] = []
         orders.append(order)
     return jsonify(orders)
+
+
+STATUS_FLOW = {
+    'pending': {'confirmed', 'cancelled'},
+    'confirmed': {'preparing', 'cancelled'},
+    'preparing': {'delivering', 'cancelled'},
+    'delivering': {'completed', 'cancelled'},
+    'completed': set(),
+    'cancelled': set(),
+}
 
 
 @app.route('/api/admin/orders/<int:order_id>/status', methods=['PUT'])
@@ -316,9 +360,18 @@ def admin_update_order_status(order_id):
         return jsonify({'message': '请求体不能为空'}), 400
 
     new_status = data.get('status')
-    valid = ['pending', 'confirmed', 'preparing', 'delivering', 'completed', 'cancelled']
-    if new_status not in valid:
+    if new_status not in STATUS_FLOW:
         return jsonify({'message': '无效的状态'}), 400
+
+    cur = g.db.execute("SELECT status FROM orders WHERE id=?", (order_id,))
+    order = cur.fetchone()
+    if not order:
+        return jsonify({'message': '订单不存在'}), 404
+
+    current = order['status']
+    if new_status not in STATUS_FLOW.get(current, set()):
+        return jsonify({'message': f'状态不能从「{current}」变为「{new_status}」'}), 400
+
     g.db.execute("UPDATE orders SET status=? WHERE id=?", (new_status, order_id))
     g.db.commit()
     return jsonify({'message': '状态更新成功'})

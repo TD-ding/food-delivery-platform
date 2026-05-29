@@ -1,6 +1,7 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { CartProvider, useCart } from './context/CartContext'
+import { ErrorBoundary } from './components/Shared'
 import MenuPage from './pages/MenuPage'
 import CartPage from './pages/CartPage'
 import CheckoutPage from './pages/CheckoutPage'
@@ -25,22 +26,24 @@ function Header() {
 
 export default function App() {
   return (
-    <CartProvider>
-      <BrowserRouter>
-        <div className="app-container">
-          <Header />
-          <main className="main-content">
-            <Routes>
-              <Route path="/" element={<MenuPage />} />
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/checkout" element={<CheckoutPage />} />
-              <Route path="/order/:id" element={<OrderStatusPage />} />
-              <Route path="/order-lookup" element={<OrderLookupPage />} />
-              <Route path="/admin/*" element={<AdminApp />} />
-            </Routes>
-          </main>
-        </div>
-      </BrowserRouter>
-    </CartProvider>
+    <ErrorBoundary>
+      <CartProvider>
+        <BrowserRouter>
+          <div className="app-container">
+            <Header />
+            <main className="main-content">
+              <Routes>
+                <Route path="/" element={<MenuPage />} />
+                <Route path="/cart" element={<CartPage />} />
+                <Route path="/checkout" element={<CheckoutPage />} />
+                <Route path="/order/:id" element={<OrderStatusPage />} />
+                <Route path="/order-lookup" element={<OrderLookupPage />} />
+                <Route path="/admin/*" element={<AdminApp />} />
+              </Routes>
+            </main>
+          </div>
+        </BrowserRouter>
+      </CartProvider>
+    </ErrorBoundary>
   )
 }

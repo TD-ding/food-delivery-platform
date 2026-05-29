@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { LoadingSpinner, StatusBadge, STATUS_OPTIONS } from '../Shared'
 import { get, put, ApiError } from '../../api'
 
-export default function AdminOrders({ token, onAuthError }) {
+export default function AdminOrders({ onAuthError }) {
   const [orders, setOrders] = useState([])
   const [filter, setFilter] = useState('')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   const load = () => {
     setLoading(true)
@@ -14,6 +15,7 @@ export default function AdminOrders({ token, onAuthError }) {
       setOrders(data)
     }).catch(err => {
       if (err.status === 401) onAuthError()
+      else setError(err.message)
     }).finally(() => setLoading(false))
   }
 
@@ -24,7 +26,8 @@ export default function AdminOrders({ token, onAuthError }) {
       await put(`/api/admin/orders/${orderId}/status`, { status })
       load()
     } catch (err) {
-      if (err.status === 401) onAuthError()
+      if (err.status === 401) { onAuthError(); return }
+      alert(err.message || '状态更新失败')
     }
   }
 
@@ -32,6 +35,7 @@ export default function AdminOrders({ token, onAuthError }) {
 
   return (
     <div>
+      {error && <p className="error-msg" style={{ marginBottom: 12 }}>{error}</p>}
       <div className="admin-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3>订单管理</h3>

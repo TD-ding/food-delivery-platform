@@ -89,7 +89,7 @@ npm run dev
 - 加入购物车 / 修改数量
 - 填写信息下单
 - 查看订单状态
-- 按订单号 + 手机号查询订单
+- 按订单号 + 查询凭证查询订单
 
 ### 管理后台
 - 管理员登录（JWT 认证）
@@ -103,7 +103,7 @@ npm run dev
 | GET | /api/dishes | 获取菜品列表（支持?category=筛选） |
 | GET | /api/dishes/categories | 获取菜品分类 |
 | POST | /api/orders | 创建订单 |
-| GET | /api/orders/:id?phone=xxx | 查询订单（需手机号验证） |
+| GET | /api/orders/:id?token=xxx | 查询订单（需查询凭证验证） |
 | POST | /api/admin/login | 管理员登录 |
 | POST | /api/admin/change-password | 修改管理员密码 |
 | GET | /api/admin/dishes | 获取所有菜品（含下架） |

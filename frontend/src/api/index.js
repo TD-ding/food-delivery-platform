@@ -55,6 +55,6 @@ export function put(url, body, options = {}) {
   return request(url, { ...options, method: 'PUT', body })
 }
 
-export function del(url, options = {}) {
+export function remove(url, options = {}) {
   return request(url, { ...options, method: 'DELETE' })
 }
