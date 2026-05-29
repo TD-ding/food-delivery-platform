@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useCart } from '../context/CartContext'
 import { LoadingSpinner } from '../Shared'
+import { get, ApiError } from '../api'
 
 const FOOD_ICONS = {
   '川菜': '🌶️', '家常菜': '🏠', '主食': '🍚', '汤品': '🥣', '饮品': '🥤', '其他': '🍽️'
@@ -16,23 +17,21 @@ export default function MenuPage() {
 
   useEffect(() => {
     setLoading(true)
-    fetch('/api/dishes/categories').then(r => {
-      if (!r.ok) throw new Error()
-      return r.json()
-    }).then(cats => {
-      setCategories(cats)
-      if (cats.length > 0) setActiveCat(cats[0])
-    }).catch(() => setError('加载分类失败，请刷新重试'))
-    .finally(() => setLoading(false))
+    get('/api/dishes/categories', { auth: false })
+      .then(cats => {
+        setCategories(cats)
+        if (cats.length > 0) setActiveCat(cats[0])
+      })
+      .catch(() => setError('加载分类失败，请刷新重试'))
+      .finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
     if (!activeCat && categories.length === 0) return
     const url = activeCat ? `/api/dishes?category=${encodeURIComponent(activeCat)}` : '/api/dishes'
-    fetch(url).then(r => {
-      if (!r.ok) throw new Error()
-      return r.json()
-    }).then(setDishes).catch(() => setError('加载菜品失败，请刷新重试'))
+    get(url, { auth: false })
+      .then(setDishes)
+      .catch(() => setError('加载菜品失败，请刷新重试'))
   }, [activeCat])
 
   if (loading) return <LoadingSpinner />

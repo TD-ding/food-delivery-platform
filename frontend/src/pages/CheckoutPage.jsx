@@ -32,7 +32,7 @@ export default function CheckoutPage() {
     try {
       const data = await post('/api/orders', { ...form, items }, { auth: false })
       clearCart()
-      navigate(`/order/${data.order_id}`)
+      navigate(`/order/${data.order_id}?token=${encodeURIComponent(data.lookup_token)}`)
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message)

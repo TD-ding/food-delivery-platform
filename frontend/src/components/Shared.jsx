@@ -1,14 +1,9 @@
+import React from 'react'
+
 export function LoadingSpinner() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
-      <div style={{
-        width: 32, height: 32,
-        border: '4px solid #ffe0e0',
-        borderTopColor: '#ff4d4f',
-        borderRadius: '50%',
-        animation: 'spin 0.8s linear infinite'
-      }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+    <div className="loading-spinner">
+      <div className="loading-spinner-dot" />
     </div>
   )
 }
@@ -30,4 +25,33 @@ export function StatusBadge({ status }) {
       {STATUS_MAP[status] || status}
     </span>
   )
+}
+
+export class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: '#999' }}>
+          <h3 style={{ marginBottom: 12, color: '#ff4d4f' }}>页面出错了</h3>
+          <p>请刷新页面重试</p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ marginTop: 12, padding: '8px 20px', background: '#ff4d4f', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+          >
+            刷新页面
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
 }

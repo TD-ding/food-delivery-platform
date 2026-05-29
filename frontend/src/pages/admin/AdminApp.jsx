@@ -36,8 +36,8 @@ export default function AdminApp() {
       </nav>
       <div className="admin-content">
         <Routes>
-          <Route path="dishes" element={<AdminDishes token={token} onAuthError={onAuthError} />} />
-          <Route path="orders" element={<AdminOrders token={token} onAuthError={onAuthError} />} />
+          <Route path="dishes" element={<AdminDishes onAuthError={onAuthError} />} />
+          <Route path="orders" element={<AdminOrders onAuthError={onAuthError} />} />
           <Route path="*" element={<Navigate to="/admin/dishes" replace />} />
         </Routes>
       </div>
