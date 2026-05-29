@@ -8,6 +8,7 @@ import CheckoutPage from './pages/CheckoutPage'
 import OrderStatusPage from './pages/OrderStatusPage'
 import OrderLookupPage from './pages/OrderLookupPage'
 import AdminApp from './pages/admin/AdminApp'
+import NotFoundPage from './pages/NotFoundPage'
 
 function Header() {
   const { count } = useCart()
@@ -39,6 +40,7 @@ export default function App() {
                 <Route path="/order/:id" element={<OrderStatusPage />} />
                 <Route path="/order-lookup" element={<OrderLookupPage />} />
                 <Route path="/admin/*" element={<AdminApp />} />
+                <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </main>
           </div>

@@ -186,11 +186,6 @@ input, textarea, select {
   color: #ff4d4f;
 }
 
-.dish-price::before {
-  content: '¥';
-  font-size: 13px;
-}
-
 .btn-add-cart {
   background: #ff4d4f;
   color: white;

@@ -1,4 +1,5 @@
 import sqlite3
+import secrets
 from werkzeug.security import generate_password_hash
 from config import Config
 
@@ -33,6 +34,7 @@ def init_db():
             address TEXT NOT NULL,
             total_price REAL NOT NULL,
             status TEXT DEFAULT 'pending',
+            lookup_token TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
